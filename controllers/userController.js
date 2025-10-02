@@ -74,3 +74,32 @@ export const createUser = async (req, res) => {
     res.status(500).json({ message: "Cannot add user" });
   }
 };
+
+// Update user
+export const updateUser = async (req, res) => {
+  const userId = parseInt(req.params.id);
+  const { name, email } = req.body;
+
+  try {
+    const users = await readUsers();
+    const index = users.findIndex((u) => u.id === userId);
+
+    if (index === -1) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const emailUsed = users.some((u) => u.email === email && u.id !== userId);
+
+    if (email && emailUsed) {
+      return res.status(400).json({ message: "Email used by another user" });
+    }
+
+    if (name) users[index].name = name;
+    if (email) users[index].email = email;
+
+    await writeUsers(users);
+    res.status(200).json({ message: "User updated", user: users[index] });
+  } catch {
+    res.status(500).json({ message: "Cannot update user" });
+  }
+};
