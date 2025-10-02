@@ -79,6 +79,7 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   const userId = parseInt(req.params.id);
   const name = req.body.name?.trim();
+  const email = req.body.email?.trim();
 
   try {
     const users = await readUsers();
