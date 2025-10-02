@@ -45,3 +45,32 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: "Error getting user" });
   }
 };
+
+// Add new user
+export const createUser = async (req, res) => {
+  const { name, email } = req.body;
+
+  if (!name || !email) {
+    return res.status(400).json({ message: "Please enter name and email" });
+  }
+
+  try {
+    const users = await readUsers();
+    const emailUsed = users.some((u) => u.email === email);
+
+    if (emailUsed) {
+      return res.status(400).json({ message: "Email already used" });
+    }
+
+    const newId =
+      users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
+
+    const newUser = { id: newId, name, email };
+    users.push(newUser);
+
+    await writeUsers(users);
+    res.status(201).json({ message: "User added", user: newUser });
+  } catch {
+    res.status(500).json({ message: "Cannot add user" });
+  }
+};
