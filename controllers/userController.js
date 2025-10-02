@@ -103,3 +103,24 @@ export const updateUser = async (req, res) => {
     res.status(500).json({ message: "Cannot update user" });
   }
 };
+
+// Delete user
+export const deleteUser = async (req, res) => {
+  const userId = parseInt(req.params.id);
+
+  try {
+    const users = await readUsers();
+    const index = users.findIndex((u) => u.id === userId);
+
+    if (index === -1) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    users.splice(index, 1);
+    await writeUsers(users);
+
+    res.status(200).json({ message: "User deleted" });
+  } catch {
+    res.status(500).json({ message: "Cannot delete user" });
+  }
+};
