@@ -1,24 +1,20 @@
-const fs = require("fs");
-const filePath = require("../data/user.json");
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
 
-fs.readFile(filePath, "utf-8", (err, data) => {
-  if (!data) return resizeBy.status(404).json({ error: "User not found" });
-});
+// To get folder path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-fs.writeFile(filePath, content, "utf8", (err) => {
-  if (err) {
-    return res.status(500).send("Error writing file.");
-  }
-  res.status(200).send("User added successfully.");
-});
+// File location
+const dataFile = path.join(__dirname, "../data/users.json");
 
-exports.getAllusers = (req, res) => {
-  res.json(filePath);
+// Read users
+const readUsers = () => {
+  return fs.readFile(dataFile, "utf-8").then((data) => JSON.parse(data));
 };
-exports.getuserbyID = (req, res) => {
-  const userID = req.params.id;
-  const userName = req.params.name;
-  const userEmail = req.params.email;
-  const user = { id: userID, name: userName, email: userEmail };
-  res.json(users.push(user));
+
+// Write users
+const writeUsers = (users) => {
+  return fs.writeFile(dataFile, JSON.stringify(users, null, 2));
 };
