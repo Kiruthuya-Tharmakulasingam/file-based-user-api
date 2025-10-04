@@ -1,40 +1,45 @@
-import fs from "fs/promises";
+import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// To get folder path
+// set directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// File location
-const dataFile = path.join(__dirname, "../data/users.json");
+// File path
+const filePath = path.join(__dirname, "../data/users.json");
 
 // Read users
-const readUsers = async () => {
-  const data = await fs.readFile(dataFile, "utf-8");
-  return JSON.parse(data);
-};
+function readUsers() {
+  try {
+    const data = readFileSync(filePath, "utf-8");
+    return JSON.parse(data || "[]");
+  } catch (err) {
+    return [];
+  }
+}
 
 // Write users
-const writeUsers = async (users) => {
-  await fs.writeFile(dataFile, JSON.stringify(users, null, 2));
-};
+function writeUsers(users) {
+  writeFileSync(filePath, JSON.stringify(users, null, 2));
+}
+
 // Get all users
-export const getAllUsers = async (req, res) => {
+export const getAllUsers = (req, res) => {
   try {
-    const users = await readUsers();
+    const users = readUsers();
     res.status(200).json(users);
   } catch {
-    res.status(500).json({ message: "Cannot read user list" });
+    res.status(500).json({ message: "Cannot read users" });
   }
 };
 
-// Get one user by ID
-export const getUserById = async (req, res) => {
+// Get one user
+export const getUserById = (req, res) => {
   try {
-    const users = await readUsers();
-    const userId = parseInt(req.params.id);
-    const user = users.find((u) => u.id === userId);
+    const users = readUsers();
+    const id = parseInt(req.params.id);
+    const user = users.find((u) => u.id === id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -46,8 +51,8 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// Add new user
-export const createUser = async (req, res) => {
+// Create user
+export const createUser = (req, res) => {
   const { name, email } = req.body;
 
   if (!name || !email) {
@@ -55,20 +60,23 @@ export const createUser = async (req, res) => {
   }
 
   try {
-    const users = await readUsers();
+    const users = readUsers();
+
     const emailUsed = users.some((u) => u.email === email);
 
     if (emailUsed) {
       return res.status(400).json({ message: "Email already used" });
     }
 
-    const newId =
-      users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
+    const newUser = {
+      id: length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1,
+      name,
+      email,
+    };
 
-    const newUser = { id: newId, name, email };
     users.push(newUser);
+    writeUsers(users);
 
-    await writeUsers(users);
     res.status(201).json({ message: "User added", user: newUser });
   } catch {
     res.status(500).json({ message: "Cannot add user" });
@@ -76,29 +84,28 @@ export const createUser = async (req, res) => {
 };
 
 // Update user
-export const updateUser = async (req, res) => {
-  const userId = parseInt(req.params.id);
-  const name = req.body.name?.trim();
-  const email = req.body.email?.trim();
+export const updateUser = (req, res) => {
+  const id = parseInt(req.params.id);
+
+  const { name, email } = req.body;
 
   try {
-    const users = await readUsers();
-    const index = users.findIndex((u) => u.id === userId);
+    const users = readUsers();
+    const index = users.findIndex((u) => u.id === id);
 
     if (index === -1) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const emailUsed = users.some((u) => u.email === email && u.id !== userId);
-
-    if (email && emailUsed) {
+    if (email && users.some((u) => u.email === email && u.id !== id)) {
       return res.status(400).json({ message: "Email used by another user" });
     }
 
     if (name) users[index].name = name;
     if (email) users[index].email = email;
 
-    await writeUsers(users);
+    writeUsers(users);
+
     res.status(200).json({ message: "User updated", user: users[index] });
   } catch {
     res.status(500).json({ message: "Cannot update user" });
@@ -106,19 +113,19 @@ export const updateUser = async (req, res) => {
 };
 
 // Delete user
-export const deleteUser = async (req, res) => {
-  const userId = parseInt(req.params.id);
+export const deleteUser = (req, res) => {
+  const id = parseInt(req.params.id);
 
   try {
-    const users = await readUsers();
-    const index = users.findIndex((u) => u.id === userId);
+    const users = readUsers();
+    const index = users.findIndex((u) => u.id === id);
 
     if (index === -1) {
       return res.status(404).json({ message: "User not found" });
     }
 
     users.splice(index, 1);
-    await writeUsers(users);
+    writeUsers(users);
 
     res.status(200).json({ message: "User deleted" });
   } catch {
